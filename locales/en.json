@@ -1,0 +1,257 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "home": "Home",
+    "evaluation": "Evaluation",
+    "suggestions": "Suggestions",
+    "library": "Library",
+    "achievement": "Achievement",
+    "contact": "Contact Us",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Get Started",
+    "logout": "Logout"
+  },
+  "home": {
+    "hero": {
+      "title": "Discover Your Potential and Start Your Journey",
+      "titleHighlight": "Towards Self-Development",
+      "description": "Through a precise personal assessment that covers various aspects of your life, we help you identify your strengths and development opportunities, and recommend the best resources for continuous growth.",
+      "cta": "Get Started"
+    },
+    "howItWorks": {
+      "title": "How",
+      "titleHighlight": "Qayeem System Works?",
+      "step1": {
+        "title": "Evaluate Yourself",
+        "description": "Answer simple questions and learn more about your level in each axis."
+      },
+      "step2": {
+        "title": "Get Your Results",
+        "description": "Once you finish the test, you get your results for each axis to know your strengths and weaknesses."
+      },
+      "step3": {
+        "title": "Buy Books That Suit You",
+        "description": "We recommend books and resources that suit you based on your results, so you can develop yourself."
+      },
+      "step4": {
+        "title": "Track Your Progress",
+        "description": "Track your progress in reading books, and know where you are in your development journey."
+      }
+    },
+    "whyQayeem": {
+      "title": "Why",
+      "titleHighlight": "Qayeem System?",
+      "benefit1": {
+        "title": "Personalized Recommendations for You.",
+        "description": "Every test you take helps us know you better, and we can recommend books, skills, and next steps that will really benefit you."
+      },
+      "benefit2": {
+        "title": "Continuous Progress Tracking",
+        "description": "We won't let you get lost! We see where you are, what you've completed, and make it easy for you to continue on the path that develops you."
+      },
+      "benefit3": {
+        "title": "Fun and Motivating Experience",
+        "description": "Challenges, achievements, a supportive community, and an atmosphere that's never boring."
+      },
+      "benefit4": {
+        "title": "Tangible Results",
+        "description": "In the end, everything you do will have weight... whether in your work or in your personal development."
+      },
+      "cta": "Get Started"
+    },
+    "suggestedBooks": {
+      "title": "Your Suggested Books",
+      "subtitle": "Follow your reading progress with us",
+      "viewMore": "View More",
+      "bookDetails": "Book Details",
+      "category": "Category",
+      "pages": "pages",
+      "completed": "completed",
+      "price": "EGP"
+    },
+    "testimonials": {
+      "title": "Client Reviews",
+      "titleHighlight": "\"Qayeem System\"",
+      "subtitle": "Real experiences from clients who started their journey and found a real difference in their lives after reading the suggested books.",
+      "testimonial": "Completely changed my way of thinking! Simple but effective steps in building strong habits."
+    },
+    "featuredBooks": {
+      "title": "Featured Books",
+      "viewAll": "View All"
+    }
+  },
+  "footer": {
+    "supportLinks": "Support & Help Links",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "library": "Library",
+    "contact": "Contact Us",
+    "mainLinks": "Main Links",
+    "home": "Home",
+    "axes": "Axes",
+    "description": "A smart platform that aims to accurately assess personal capabilities and provide personalized recommendations that help you develop yourself and achieve the best version of yourself through a continuous educational and developmental path.",
+    "copyright": "All rights reserved © Qayeem System 2025"
+  },
+  "auth": {
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "register": "Register now"
+    },
+    "register": {
+      "title": "Create New Account",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "hasAccount": "Already have an account?",
+      "login": "Login"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "email": "Email",
+      "sendResetLink": "Send Reset Link",
+      "backToLogin": "Back to Login"
+    }
+  },
+  "book": {
+    "title": "Book Title",
+    "author": "Author",
+    "category": "Category",
+    "price": "Price",
+    "description": "Description",
+    "isbn": "ISBN Number",
+    "pages": "Number of Pages",
+    "stock": "Stock",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "reviews": "Reviews",
+    "rating": "Rating",
+    "noReviews": "No reviews yet"
+  },
+  "evaluation": {
+    "title": "Evaluations",
+    "start": "Start Evaluation",
+    "results": "Results",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "notStarted": "Not Started",
+    "score": "Score",
+    "overallScore": "Your Overall Score",
+    "categoryProgress": "Category Progress",
+    "viewDetails": "View Question Results",
+    "suggestionsTitle": "Suggestions",
+    "suggestionsDescription": "Based on your results, we suggest these books to help you develop yourself",
+    "loginRequired": "You must login first",
+    "fetchError": "Failed to load evaluation",
+    "submitSuccess": "Evaluation submitted successfully",
+    "submitError": "Failed to submit evaluation",
+    "progress": "Progress",
+    "questionPlaceholder": "Question about physical health",
+    "answerInstructions": "Answer the questions, choose the degree that expresses how much the statements apply to you",
+    "options": {
+      "notApplicable": "Not Applicable",
+      "slightlyApplicable": "Slightly Applicable",
+      "somewhatApplicable": "Somewhat Applicable",
+      "veryApplicable": "Very Applicable",
+      "fullyApplicable": "Fully Applicable"
+    },
+    "previousQuestion": "Previous Question",
+    "nextQuestion": "Next Question",
+    "finish": "Finish",
+    "noCriteria": "No criteria available for this evaluation",
+    "notFound": "Evaluation not found",
+    "backToEvaluations": "Back to Evaluations",
+    "questionResults": "Question Results",
+    "totalScore": "Total Score",
+    "yourAnswer": "Your Answer",
+    "noAnswer": "No answer provided for this question",
+    "score": "Score",
+    "noResults": "No results available. Please complete the evaluation first.",
+    "startEvaluation": "Start Evaluation",
+    "backToResults": "Back to Results"
+  },
+  "library": {
+    "title": "Library",
+    "allBooks": "All Books",
+    "filterByCategory": "Filter by Category",
+    "sortBy": "Sort by",
+    "price": "Price",
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "noBooks": "No books available"
+  },
+  "suggestions": {
+    "title": "Suggestions",
+    "description": "Books suggested based on your evaluations",
+    "noSuggestions": "No suggestions available at the moment"
+  },
+  "achievement": {
+    "title": "Achievements",
+    "description": "Track your achievements and progress",
+    "noAchievements": "No achievements yet",
+    "fetchError": "Failed to load achievement data"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "send": "Send",
+    "success": "Your message has been sent successfully",
+    "error": "An error occurred while sending the message"
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "edit": "Edit Profile",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "joinedDate": "Joined Date"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "stats": {
+      "users": "Users",
+      "books": "Books",
+      "evaluations": "Evaluations",
+      "payments": "Payments"
+    }
+  },
+  "language": {
+    "arabic": "العربية",
+    "english": "English",
+    "switch": "Switch Language"
+  }
+}
+
