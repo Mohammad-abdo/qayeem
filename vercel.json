@@ -2,6 +2,7 @@
     "framework": "nextjs",
     "rootDirectory": "frontend",
     "buildCommand": "npm run build",
-    "installCommand": "npm install"
+    "installCommand": "npm install",
+    "startCommand": "npm run start"
   }
   
