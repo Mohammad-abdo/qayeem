@@ -6,6 +6,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
