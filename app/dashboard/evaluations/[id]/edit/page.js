@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAdminAuth } from '@/context/AdminAuthContext'
 import { adminEvaluationsAPI, adminCriteriaAPI, adminUploadAPI } from '@/lib/adminApi'
 import toast from 'react-hot-toast'
-import { ArrowRight, Save, Plus, Trash2, Upload, X } from 'lucide-react'
+import { ArrowRight, Save, Plus, X, Trash2, Upload } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditEvaluationPage() {
@@ -24,7 +24,10 @@ export default function EditEvaluationPage() {
     startDate: '',
     endDate: '',
   })
-  const [criteria, setCriteria] = useState([])
+  const [practicesCriteria, setPracticesCriteria] = useState([])
+  const [patternsCriteria, setPatternsCriteria] = useState([])
+  const [practicesPercentage, setPracticesPercentage] = useState(50)
+  const [patternsPercentage, setPatternsPercentage] = useState(50)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState('')
 
@@ -55,6 +58,14 @@ export default function EditEvaluationPage() {
           : '',
       })
       setImagePreview(evaluation.image || '')
+      
+      // Set percentages if available in evaluation data
+      if (evaluation.practicesPercentage !== undefined) {
+        setPracticesPercentage(evaluation.practicesPercentage)
+      }
+      if (evaluation.patternsPercentage !== undefined) {
+        setPatternsPercentage(evaluation.patternsPercentage)
+      }
     } catch (error) {
       console.error('Error fetching evaluation:', error)
       toast.error('فشل تحميل بيانات التقييم')
@@ -67,7 +78,14 @@ export default function EditEvaluationPage() {
   const fetchCriteria = async () => {
     try {
       const response = await adminCriteriaAPI.getByEvaluation(params.id)
-      setCriteria(response.data.criteria || [])
+      const allCriteria = response.data.criteria || []
+      
+      // Separate criteria by bookType
+      const practices = allCriteria.filter(c => c.bookType === 'PRACTICES')
+      const patterns = allCriteria.filter(c => c.bookType === 'PATTERNS')
+      
+      setPracticesCriteria(practices)
+      setPatternsCriteria(patterns)
     } catch (error) {
       console.error('Error fetching criteria:', error)
     }
@@ -78,11 +96,74 @@ export default function EditEvaluationPage() {
 
     try {
       setSaving(true)
+      
+      // Validate percentages
+      if (practicesPercentage + patternsPercentage !== 100) {
+        toast.error('يجب أن يكون مجموع النسب المئوية للممارسات والأنماط 100%')
+        return
+      }
+
+      // Update evaluation
       await adminEvaluationsAPI.update(params.id, {
         ...formData,
         startDate: formData.startDate || null,
         endDate: formData.endDate || null,
+        practicesPercentage: practicesPercentage,
+        patternsPercentage: patternsPercentage,
       })
+      
+      // Update practices criteria
+      for (let index = 0; index < practicesCriteria.length; index++) {
+        const criterion = practicesCriteria[index]
+        try {
+          if (criterion.id) {
+            // Update existing
+            await adminCriteriaAPI.update(criterion.id, {
+              ...criterion,
+              evaluationId: parseInt(params.id),
+              bookType: 'PRACTICES',
+              order: index,
+            })
+          } else {
+            // Create new
+            await adminCriteriaAPI.create({
+              ...criterion,
+              evaluationId: parseInt(params.id),
+              bookType: 'PRACTICES',
+              order: index,
+            })
+          }
+        } catch (error) {
+          console.error(`Error saving practices criterion ${index}:`, error)
+        }
+      }
+      
+      // Update patterns criteria
+      for (let index = 0; index < patternsCriteria.length; index++) {
+        const criterion = patternsCriteria[index]
+        try {
+          if (criterion.id) {
+            // Update existing
+            await adminCriteriaAPI.update(criterion.id, {
+              ...criterion,
+              evaluationId: parseInt(params.id),
+              bookType: 'PATTERNS',
+              order: index,
+            })
+          } else {
+            // Create new
+            await adminCriteriaAPI.create({
+              ...criterion,
+              evaluationId: parseInt(params.id),
+              bookType: 'PATTERNS',
+              order: index,
+            })
+          }
+        } catch (error) {
+          console.error(`Error saving patterns criterion ${index}:`, error)
+        }
+      }
+      
       toast.success('تم تحديث التقييم بنجاح')
       router.push('/dashboard/evaluations')
     } catch (error) {
@@ -90,76 +171,6 @@ export default function EditEvaluationPage() {
       toast.error(error.response?.data?.error || 'فشل تحديث التقييم')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const addCriterion = () => {
-    setCriteria([
-      ...criteria,
-      {
-        title: '',
-        titleAr: '',
-        description: '',
-        descriptionAr: '',
-        weight: 1.0,
-        maxScore: 10.0,
-        isRequired: true,
-        bookType: null,
-        questionPercentage: 0,
-        answer1Percentage: 20,
-        answer2Percentage: 20,
-        answer3Percentage: 20,
-        answer4Percentage: 20,
-        answer5Percentage: 20,
-      },
-    ])
-  }
-
-  const updateCriterion = (index, field, value) => {
-    const updated = [...criteria]
-    updated[index] = { ...updated[index], [field]: value }
-    setCriteria(updated)
-  }
-
-  const removeCriterion = async (index) => {
-    const criterion = criteria[index]
-    if (criterion.id) {
-      // Delete existing criterion from backend
-      try {
-        await adminCriteriaAPI.delete(criterion.id)
-        toast.success('تم حذف السؤال')
-      } catch (error) {
-        toast.error('فشل حذف السؤال')
-        return
-      }
-    }
-    setCriteria(criteria.filter((_, i) => i !== index))
-  }
-
-  const saveCriterion = async (index) => {
-    const criterion = criteria[index]
-    try {
-      if (criterion.id) {
-        // Update existing
-        await adminCriteriaAPI.update(criterion.id, {
-          ...criterion,
-          evaluationId: parseInt(params.id),
-        })
-        toast.success('تم تحديث السؤال')
-      } else {
-        // Create new
-        const response = await adminCriteriaAPI.create({
-          ...criterion,
-          evaluationId: parseInt(params.id),
-          order: index,
-        })
-        const updated = [...criteria]
-        updated[index] = response.data.criterion
-        setCriteria(updated)
-        toast.success('تم إضافة السؤال')
-      }
-    } catch (error) {
-      toast.error('فشل حفظ السؤال')
     }
   }
 
@@ -218,6 +229,88 @@ export default function EditEvaluationPage() {
     setImagePreview('')
   }
 
+  const addPracticesCriterion = () => {
+    setPracticesCriteria([
+      ...practicesCriteria,
+      {
+        title: '',
+        titleAr: '',
+        description: '',
+        descriptionAr: '',
+        weight: 1.0,
+        maxScore: 10.0,
+        isRequired: true,
+        answer1Percentage: 20, // لا ينطبق
+        answer2Percentage: 20, // ينطبق قليلاً
+        answer3Percentage: 20, // ينطبق إلى حد ما
+        answer4Percentage: 20, // ينطبق كثيراً
+        answer5Percentage: 20, // ينطبق تماماً
+      },
+    ])
+  }
+
+  const addPatternsCriterion = () => {
+    setPatternsCriteria([
+      ...patternsCriteria,
+      {
+        title: '',
+        titleAr: '',
+        description: '',
+        descriptionAr: '',
+        weight: 1.0,
+        maxScore: 10.0,
+        isRequired: true,
+        answer1Percentage: 20, // لا ينطبق
+        answer2Percentage: 20, // ينطبق قليلاً
+        answer3Percentage: 20, // ينطبق إلى حد ما
+        answer4Percentage: 20, // ينطبق كثيراً
+        answer5Percentage: 20, // ينطبق تماماً
+      },
+    ])
+  }
+
+  const updatePracticesCriterion = (index, field, value) => {
+    const updated = [...practicesCriteria]
+    updated[index] = { ...updated[index], [field]: value }
+    setPracticesCriteria(updated)
+  }
+
+  const updatePatternsCriterion = (index, field, value) => {
+    const updated = [...patternsCriteria]
+    updated[index] = { ...updated[index], [field]: value }
+    setPatternsCriteria(updated)
+  }
+
+  const removePracticesCriterion = async (index) => {
+    const criterion = practicesCriteria[index]
+    if (criterion.id) {
+      // Delete existing criterion from backend
+      try {
+        await adminCriteriaAPI.delete(criterion.id)
+        toast.success('تم حذف السؤال')
+      } catch (error) {
+        toast.error('فشل حذف السؤال')
+        return
+      }
+    }
+    setPracticesCriteria(practicesCriteria.filter((_, i) => i !== index))
+  }
+
+  const removePatternsCriterion = async (index) => {
+    const criterion = patternsCriteria[index]
+    if (criterion.id) {
+      // Delete existing criterion from backend
+      try {
+        await adminCriteriaAPI.delete(criterion.id)
+        toast.success('تم حذف السؤال')
+      } catch (error) {
+        toast.error('فشل حذف السؤال')
+        return
+      }
+    }
+    setPatternsCriteria(patternsCriteria.filter((_, i) => i !== index))
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -259,6 +352,7 @@ export default function EditEvaluationPage() {
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+              placeholder="Evaluation Title"
             />
           </div>
 
@@ -272,6 +366,7 @@ export default function EditEvaluationPage() {
               value={formData.titleAr}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+              placeholder="عنوان التقييم"
             />
           </div>
 
@@ -385,6 +480,7 @@ export default function EditEvaluationPage() {
             onChange={handleChange}
             rows={4}
             className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+            placeholder="Evaluation Description"
           />
         </div>
 
@@ -398,65 +494,113 @@ export default function EditEvaluationPage() {
             onChange={handleChange}
             rows={4}
             className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+            placeholder="وصف التقييم"
           />
         </div>
 
-        {/* Criteria Section */}
+        {/* Percentage Section */}
+        <div className="border-t border-black-100 pt-6">
+          <h2 className="text-xl font-bold text-black-500 mb-4">النسب المئوية للمحاور</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <label className="block text-sm font-medium text-black-500 mb-2">
+                نسبة الممارسات (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={practicesPercentage}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  setPracticesPercentage(value)
+                  setPatternsPercentage(100 - value)
+                }}
+                className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+              />
+              <p className="text-xs text-black-400 mt-1">
+                النسبة المئوية التي سيتم على أساسها تحديد الكتب الموصى بها من نوع الممارسات
+              </p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <label className="block text-sm font-medium text-black-500 mb-2">
+                نسبة الأنماط (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={patternsPercentage}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  setPatternsPercentage(value)
+                  setPracticesPercentage(100 - value)
+                }}
+                className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+              />
+              <p className="text-xs text-black-400 mt-1">
+                النسبة المئوية التي سيتم على أساسها تحديد الكتب الموصى بها من نوع الأنماط
+              </p>
+            </div>
+          </div>
+          <div className="mb-4">
+            <p className={`text-sm font-medium ${practicesPercentage + patternsPercentage === 100 ? 'text-green-600' : 'text-red-600'}`}>
+              المجموع: {practicesPercentage + patternsPercentage}%
+              {practicesPercentage + patternsPercentage !== 100 && ' (يجب أن يكون المجموع 100%)'}
+            </p>
+          </div>
+        </div>
+
+        {/* Practices Criteria Section */}
         <div className="border-t border-black-100 pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-black-500">الأسئلة (المعايير)</h2>
+            <div>
+              <h2 className="text-xl font-bold text-black-500">أسئلة الممارسات</h2>
+              <p className="text-sm text-black-600 mt-1">أسئلة خاصة بكتب الممارسات (النسبة: {practicesPercentage}%)</p>
+            </div>
             <button
               type="button"
-              onClick={addCriterion}
-              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center"
+              onClick={addPracticesCriterion}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center"
             >
               <Plus className="ml-2 w-5 h-5" />
-              إضافة سؤال
+              إضافة سؤال ممارسات
             </button>
           </div>
 
-          {criteria.length === 0 ? (
-            <p className="text-black-600 text-center py-8">
-              لا توجد أسئلة. اضغط على &quot;إضافة سؤال&quot; لإضافة أسئلة للتقييم.
+          {practicesCriteria.length === 0 ? (
+            <p className="text-black-600 text-center py-8 bg-blue-50 rounded-lg border border-blue-200">
+              لا توجد أسئلة للممارسات. اضغط على &quot;إضافة سؤال ممارسات&quot; لإضافة أسئلة.
             </p>
           ) : (
             <div className="space-y-4">
-              {criteria.map((criterion, index) => (
+              {practicesCriteria.map((criterion, index) => (
                 <div
                   key={criterion.id || index}
-                  className="border border-black-100 rounded-lg p-4 bg-black-50"
+                  className="border border-blue-200 rounded-lg p-4 bg-blue-50"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-semibold text-black-500">
-                      سؤال #{index + 1}
+                      سؤال ممارسات #{index + 1}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => saveCriterion(index)}
-                        className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                      >
-                        حفظ
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeCriterion(index)}
-                        className="text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePracticesCriterion(index)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium text-black-500 mb-2">
-                        السؤال (إنجليزي) *
+                        عنوان السؤال (إنجليزي) *
                       </label>
                       <input
                         type="text"
-                        value={criterion.title}
-                        onChange={(e) => updateCriterion(index, 'title', e.target.value)}
+                        value={criterion.title || ''}
+                        onChange={(e) => updatePracticesCriterion(index, 'title', e.target.value)}
                         required
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
                         placeholder="Question Title"
@@ -465,54 +609,40 @@ export default function EditEvaluationPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-black-500 mb-2">
-                        السؤال (عربي)
+                        عنوان السؤال (عربي)
                       </label>
                       <input
                         type="text"
                         value={criterion.titleAr || ''}
-                        onChange={(e) => updateCriterion(index, 'titleAr', e.target.value)}
+                        onChange={(e) => updatePracticesCriterion(index, 'titleAr', e.target.value)}
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
                         placeholder="عنوان السؤال"
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-black-500 mb-2">
-                        الوصف (إنجليزي)
+                        مضمون السؤال (إنجليزي)
                       </label>
                       <textarea
                         value={criterion.description || ''}
-                        onChange={(e) => updateCriterion(index, 'description', e.target.value)}
-                        rows={2}
+                        onChange={(e) => updatePracticesCriterion(index, 'description', e.target.value)}
+                        rows={3}
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
-                        placeholder="Question Description"
+                        placeholder="Question Content"
                       />
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-black-500 mb-2">
-                        الوصف (عربي)
+                        مضمون السؤال (عربي)
                       </label>
                       <textarea
                         value={criterion.descriptionAr || ''}
-                        onChange={(e) => updateCriterion(index, 'descriptionAr', e.target.value)}
-                        rows={2}
+                        onChange={(e) => updatePracticesCriterion(index, 'descriptionAr', e.target.value)}
+                        rows={3}
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
-                        placeholder="وصف السؤال"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-black-500 mb-2">
-                        الوزن
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={criterion.weight}
-                        onChange={(e) => updateCriterion(index, 'weight', parseFloat(e.target.value) || 1.0)}
-                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                        placeholder="مضمون السؤال"
                       />
                     </div>
 
@@ -524,8 +654,8 @@ export default function EditEvaluationPage() {
                         type="number"
                         step="0.1"
                         min="0"
-                        value={criterion.maxScore}
-                        onChange={(e) => updateCriterion(index, 'maxScore', parseFloat(e.target.value) || 10.0)}
+                        value={criterion.maxScore || 10.0}
+                        onChange={(e) => updatePracticesCriterion(index, 'maxScore', parseFloat(e.target.value) || 10.0)}
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
                       />
                     </div>
@@ -540,7 +670,207 @@ export default function EditEvaluationPage() {
                         min="0"
                         max="100"
                         value={criterion.questionPercentage || 0}
-                        onChange={(e) => updateCriterion(index, 'questionPercentage', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updatePracticesCriterion(index, 'questionPercentage', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                      />
+                      <p className="text-xs text-black-400 mt-1">
+                        النسبة المئوية التي يمثلها هذا السؤال في التقييم الكلي
+                      </p>
+                    </div>
+
+                    {/* Answer Percentages */}
+                    <div className="md:col-span-2 border-t border-black-100 pt-4 mt-4">
+                      <label className="block text-sm font-medium text-black-500 mb-3">
+                        النسب المئوية للإجابات الخمسة (يجب أن يكون المجموع 100%)
+                      </label>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+                        {[
+                          { key: 'answer1Percentage', label: '1 - لا ينطبق', color: 'red' },
+                          { key: 'answer2Percentage', label: '2 - ينطبق قليلاً', color: 'orange' },
+                          { key: 'answer3Percentage', label: '3 - ينطبق إلى حد ما', color: 'yellow' },
+                          { key: 'answer4Percentage', label: '4 - ينطبق كثيراً', color: 'blue' },
+                          { key: 'answer5Percentage', label: '5 - ينطبق تماماً', color: 'green' },
+                        ].map((option) => {
+                          const total = (criterion.answer1Percentage || 0) + 
+                                       (criterion.answer2Percentage || 0) + 
+                                       (criterion.answer3Percentage || 0) + 
+                                       (criterion.answer4Percentage || 0) + 
+                                       (criterion.answer5Percentage || 0)
+                          return (
+                            <div key={option.key}>
+                              <label className="block text-xs text-black-600 mb-1">{option.label}</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                value={criterion[option.key] || 0}
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value) || 0
+                                  updatePracticesCriterion(index, option.key, value)
+                                }}
+                                className="w-full px-2 py-1 text-sm border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black-500"
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-2">
+                        <p className={`text-xs font-medium ${(() => {
+                          const total = (criterion.answer1Percentage || 0) + 
+                                       (criterion.answer2Percentage || 0) + 
+                                       (criterion.answer3Percentage || 0) + 
+                                       (criterion.answer4Percentage || 0) + 
+                                       (criterion.answer5Percentage || 0)
+                          return total === 100 ? 'text-green-600' : 'text-red-600'
+                        })()}`}>
+                          المجموع: {((criterion.answer1Percentage || 0) + 
+                                   (criterion.answer2Percentage || 0) + 
+                                   (criterion.answer3Percentage || 0) + 
+                                   (criterion.answer4Percentage || 0) + 
+                                   (criterion.answer5Percentage || 0)).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={criterion.isRequired !== false}
+                          onChange={(e) => updatePracticesCriterion(index, 'isRequired', e.target.checked)}
+                          className="ml-2 w-4 h-4 text-primary-500 border-black-100 rounded focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-black-600">سؤال مطلوب</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Patterns Criteria Section */}
+        <div className="border-t border-black-100 pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-black-500">أسئلة الأنماط</h2>
+              <p className="text-sm text-black-600 mt-1">أسئلة خاصة بكتب الأنماط (النسبة: {patternsPercentage}%)</p>
+            </div>
+            <button
+              type="button"
+              onClick={addPatternsCriterion}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center"
+            >
+              <Plus className="ml-2 w-5 h-5" />
+              إضافة سؤال أنماط
+            </button>
+          </div>
+
+          {patternsCriteria.length === 0 ? (
+            <p className="text-black-600 text-center py-8 bg-green-50 rounded-lg border border-green-200">
+              لا توجد أسئلة للأنماط. اضغط على &quot;إضافة سؤال أنماط&quot; لإضافة أسئلة.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {patternsCriteria.map((criterion, index) => (
+                <div
+                  key={criterion.id || index}
+                  className="border border-green-200 rounded-lg p-4 bg-green-50"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-black-500">
+                      سؤال أنماط #{index + 1}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => removePatternsCriterion(index)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        عنوان السؤال (إنجليزي) *
+                      </label>
+                      <input
+                        type="text"
+                        value={criterion.title || ''}
+                        onChange={(e) => updatePatternsCriterion(index, 'title', e.target.value)}
+                        required
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                        placeholder="Question Title"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        عنوان السؤال (عربي)
+                      </label>
+                      <input
+                        type="text"
+                        value={criterion.titleAr || ''}
+                        onChange={(e) => updatePatternsCriterion(index, 'titleAr', e.target.value)}
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                        placeholder="عنوان السؤال"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        مضمون السؤال (إنجليزي)
+                      </label>
+                      <textarea
+                        value={criterion.description || ''}
+                        onChange={(e) => updatePatternsCriterion(index, 'description', e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                        placeholder="Question Content"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        مضمون السؤال (عربي)
+                      </label>
+                      <textarea
+                        value={criterion.descriptionAr || ''}
+                        onChange={(e) => updatePatternsCriterion(index, 'descriptionAr', e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                        placeholder="مضمون السؤال"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        الحد الأقصى للدرجة
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={criterion.maxScore || 10.0}
+                        onChange={(e) => updatePatternsCriterion(index, 'maxScore', parseFloat(e.target.value) || 10.0)}
+                        className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-black-500 mb-2">
+                        نسبة السؤال في التقييم (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={criterion.questionPercentage || 0}
+                        onChange={(e) => updatePatternsCriterion(index, 'questionPercentage', parseFloat(e.target.value) || 0)}
                         className="w-full px-4 py-2 border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-black-500"
                       />
                       <p className="text-xs text-black-400 mt-1">
@@ -572,7 +902,7 @@ export default function EditEvaluationPage() {
                                 value={criterion[option.key] || 0}
                                 onChange={(e) => {
                                   const value = parseFloat(e.target.value) || 0
-                                  updateCriterion(index, option.key, value)
+                                  updatePatternsCriterion(index, option.key, value)
                                 }}
                                 className="w-full px-2 py-1 text-sm border border-black-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-black-500"
                               />
@@ -602,8 +932,8 @@ export default function EditEvaluationPage() {
                       <label className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={criterion.isRequired}
-                          onChange={(e) => updateCriterion(index, 'isRequired', e.target.checked)}
+                          checked={criterion.isRequired !== false}
+                          onChange={(e) => updatePatternsCriterion(index, 'isRequired', e.target.checked)}
                           className="ml-2 w-4 h-4 text-primary-500 border-black-100 rounded focus:ring-primary-500"
                         />
                         <span className="text-sm text-black-600">سؤال مطلوب</span>
@@ -623,7 +953,7 @@ export default function EditEvaluationPage() {
             className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors flex items-center"
           >
             <Save className="ml-2 w-5 h-5" />
-            {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+            {saving ? 'جاري الحفظ...' : 'حفظ'}
           </button>
           <Link href="/dashboard/evaluations" className="btn-secondary">
             إلغاء
